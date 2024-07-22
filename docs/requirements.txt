@@ -1,3 +1,5 @@
 langchain
 accelerate
 langchain_community
+pypdf
+docarray

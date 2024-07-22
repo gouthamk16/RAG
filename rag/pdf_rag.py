@@ -1,13 +1,19 @@
 from langchain_community.llms import Ollama 
 from langchain_core.output_parsers import StrOutputParser
-from langchain.prompts import ChatPromptTemplate
+from langchain.prompts import ChatPromptTemplate, PromptTemplate
 from operator import itemgetter
 from langchain.text_splitter import RecursiveCharacterTextSplitter
-import pypdf
+from langchain_community.document_loaders import PyPDFLoader 
+from langchain_community.vectorstores import DocArrayInMemorySearch, Chroma
+from langchain_community.embeddings import OllamaEmbeddings
 # Rest of the code goes here
 
+## Loading the input pdf:
+pdf_path = "../sample_data/pdf/sample.pdf"
+pdf_loader = PyPDFLoader(pdf_path)
+pdf_pages = pdf_loader.load_and_split()
+
 model = Ollama(model="llama3")
-test_pdf_path = "./sample_data/pdf/sample.pdf"
 
 parser = StrOutputParser()
 
@@ -20,20 +26,21 @@ Context: {context}
 Question: {question}
 """
 
-prompt = ChatPromptTemplate.from_template(template)
-translation_prompt = ChatPromptTemplate.from_template("Translate {answer} to {language}")
+translation_template = """
+Translate {answer} to {language}
+"""
+
+prompt = PromptTemplate.from_template(template)
+## Adding some extra spice - answering in your local language
+translation_prompt = ChatPromptTemplate.from_template(translation_template)
 
 chain = prompt | model | parser
+## information on the chain -> chain.input_schema.schema()
 
 translation_chain = ({"answer": chain, "language": itemgetter("language")} | translation_prompt | model | parser)
 
-docs = pypdf.PDF(test_pdf_path)
+## Initializing the vector store with a suitable embedding
+vectorStore = DocArrayInMemorySearch.from_documents(pdf_pages, embedding = OllamaEmbeddings(model="llama3"))
+ret = vectorStore.as_retriever()
 
-for page in docs:
-    text = RecursiveCharacterTextSplitter().split(page)
-    chain.run(context=text, question="What is the main idea of this page?")
-    print("Answer:", chain.output["answer"])
-    translation_chain.run()
-    print("Translated Answer:", translation_chain.output["answer"])
-    print("\n")
-
+print(ret.invoke("Attention"))
