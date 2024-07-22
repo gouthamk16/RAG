@@ -1,0 +1,3 @@
+langchain
+accelerate
+langchain_community
