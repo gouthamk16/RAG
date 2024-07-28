@@ -6,7 +6,6 @@ from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.document_loaders import PyPDFLoader 
 from langchain_community.vectorstores import DocArrayInMemorySearch, Chroma
 from langchain_community.embeddings import OllamaEmbeddings
-# Rest of the code goes here
 
 ## Loading the input pdf:
 pdf_path = "../sample_data/pdf/sample.pdf"
@@ -26,21 +25,28 @@ Context: {context}
 Question: {question}
 """
 
-translation_template = """
-Translate {answer} to {language}
-"""
+# translation_template = """
+# Translate {answer} to {language}
+# """
 
 prompt = PromptTemplate.from_template(template)
 ## Adding some extra spice - answering in your local language
-translation_prompt = ChatPromptTemplate.from_template(translation_template)
+# translation_prompt = ChatPromptTemplate.from_template(translation_template)
 
 chain = prompt | model | parser
 ## information on the chain -> chain.input_schema.schema()
 
-translation_chain = ({"answer": chain, "language": itemgetter("language")} | translation_prompt | model | parser)
+# translation_chain = ({"answer": chain, "language": itemgetter("language")} | translation_prompt | model | parser)
 
-## Initializing the vector store with a suitable embedding
+## Initializing the vector store with a suitable embedding -> using a OllamaEmbeddings model for now
 vectorStore = DocArrayInMemorySearch.from_documents(pdf_pages, embedding = OllamaEmbeddings(model="llama3"))
 ret = vectorStore.as_retriever()
 
-print(ret.invoke("Attention"))
+chain = (
+    {"context": itemgetter("question") | ret, "question": itemgetter("question")}
+    | prompt
+    | model 
+    | parser
+)
+
+chain.invoke("How does transformers work?")
