@@ -6,3 +6,5 @@ docarray
 gradio
 beautifulsoup4
 ollama
+openai-whisper
+youtube_transcript_api

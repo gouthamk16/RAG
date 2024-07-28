@@ -6,10 +6,6 @@ from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.document_loaders import TextLoader
 from langchain_community.vectorstores import DocArrayInMemorySearch, Chroma
 from langchain_community.embeddings import OllamaEmbeddings
-import tempfile
-import whisper
-from pytube import YouTube
-import os
 from langchain_core.runnables import RunnablePassthrough
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from youtube_transcript_api import YouTubeTranscriptApi
@@ -40,30 +36,6 @@ print("Video id: ", video_id)
 
 transcript = get_transcript(video_id)
 
-# if not os.path.exists("transcription.txt"):
-#     youtube = YouTube(YOUTUBE_VIDEO)
-#     audio = youtube.streams.filter(only_audio=True).first()
-
-#     # Let's load the base model. This is not the most accurate
-#     # model but it's fast.
-#     whisper_model = whisper.load_model("base")
-
-#     with tempfile.TemporaryDirectory() as tmpdir:
-#         file = audio.download(output_path=tmpdir)
-#         transcription = whisper_model.transcribe(file, fp16=False)["text"].strip()
-
-#         with open("transcription.txt", "w") as file:
-#             file.write(transcription)
-
-# with open("transcription.txt") as file:
-#     transcription = file.read()
-
-# loader = TextLoader(transcript)
-# transcript = loader.load()
-
-# print("Extracted Transcript: ")
-# print(transcript)
-
 text_splitter = RecursiveCharacterTextSplitter(
     # Set a really small chunk size, just to show.
     chunk_size=100,
@@ -72,14 +44,7 @@ text_splitter = RecursiveCharacterTextSplitter(
     is_separator_regex=False,
 )
 
-# texts = text_splitter.create_documents([transcript])
-
 splitted_text = text_splitter.split_text(transcript)
-
-
-# # Splitting the transcript into chunks
-# text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=10)
-# processed_transcript = text_splitter.split_documents(transcript)
 
 # Defining the model, embedding and the parser
 model = Ollama(model="llama3")
