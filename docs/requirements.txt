@@ -3,3 +3,6 @@ accelerate
 langchain_community
 pypdf
 docarray
+gradio
+beautifulsoup4
+ollama
