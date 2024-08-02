@@ -9,6 +9,10 @@ from langchain_community.embeddings import OllamaEmbeddings
 from langchain_core.runnables import RunnablePassthrough
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from youtube_transcript_api import YouTubeTranscriptApi
+from langchain.embeddings.huggingface import HuggingFaceEmbeddings
+from torch import cuda
+from langchain.vectorstores import Chroma
+
 
 ## Loading the youtube video transcript into a text file
 YOUTUBE_VIDEO = "https://www.youtube.com/watch?v=IARh8shW-Ww"
@@ -51,13 +55,28 @@ model = Ollama(model="llama3")
 embeddings = OllamaEmbeddings(model = "llama3")
 parser = StrOutputParser()
 
+## Trying out huggingface embedding model along wih chroma db
+## TO-DO: Test this implementation
+# embed_model_id = 'sentence-transformers/all-MiniLM-L6-v2'
+# device = f'cuda:{cuda.current_device()}' if cuda.is_available() else 'cpu'
+# embedding_model = HuggingFaceEmbeddings(
+#     model_name=embed_model_id,
+#     model_kwargs={'device': device},
+#     encode_kwargs={'device': device, 'batch_size': 32}
+# )
+# loader = TextLoader(transcript)
+# data = loader.load()
+# text_splitter = RecursiveCharacterTextSplitter(chunk_size=50, chunk_overlap=0)
+# all_splits = text_splitter.split_documents(data)
+# vectorstore = Chroma.from_documents(documents=all_splits, embedding=embedding_model)
+
 ## Setting up the vectorstore
 vectorstore = DocArrayInMemorySearch.from_texts(splitted_text, embeddings)
 ret = vectorstore.as_retriever()
 
 ## Defining the finetuning prompt
 template = """
-You are an intelligent AI assistent curated to analyze PDF's. Answer the question based on the context provided below. If you can't 
+You are an intelligent AI assistent curated to analyze PDF's. Answer the question based on the context provided below. Just the answer, no additional messages. If you can't 
 answer the question from the given context, reply "I don't know".
 
 Context: {context}
