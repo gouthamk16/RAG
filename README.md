@@ -1,5 +1,5 @@
 # RAG
-Repository containing LLM's optimized for retrieval augmented generation (RAG) and Vector Search implementations using embedding models and vector databases.
+Repository containing LLM's optimized for retrieval augmented generation (RAG) using Llama 3 and Vector Search implementations using embedding models and vector databases.
 
 ### TO_DO:
 1. Add the code for the RAG model with the optimized retrieval
