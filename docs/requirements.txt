@@ -10,3 +10,4 @@ openai-whisper
 youtube_transcript_api
 llama-cpp-python
 huggingface-hub
+streamlit

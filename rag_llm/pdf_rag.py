@@ -8,54 +8,56 @@ from langchain_community.vectorstores import DocArrayInMemorySearch, Chroma
 from langchain_community.embeddings import OllamaEmbeddings
 from langchain.embeddings import HuggingFaceEmbeddings
 
-## Loading the input pdf:
-pdf_path = "../sample_data/pdf/sample.pdf"
-pdf_loader = PyPDFLoader(pdf_path)
-pdf_pages = pdf_loader.load_and_split()
+def pdf_rag(question, pdf_path):
 
-model = Ollama(model="llama3")
+    ## Loading the input pdf:
+    pdf_path = "../sample_data/pdf/sample.pdf"
+    pdf_loader = PyPDFLoader(pdf_path)
+    pdf_pages = pdf_loader.load_and_split()
 
-parser = StrOutputParser()
+    model = Ollama(model="llama3")
 
-template = """
-You are an intelligent AI assistent curated to analyze PDF's. Answer the question based on the context provided below. If you can't 
-answer the question from the given context, reply "I don't know".
+    parser = StrOutputParser()
 
-Context: {context}
+    template = """
+    You are an intelligent AI assistent curated to analyze and summarize PDF's. Answer the question based on the context provided below. If you can't 
+    answer the question from the given context, reply "I don't know".
 
-Question: {question}
-"""
+    Context: {context}
 
-# translation_template = """
-# Translate {answer} to {language}
-# """
+    Question: {question}
+    """
 
-prompt = PromptTemplate.from_template(template)
-## Adding some extra spice - answering in your local language
-# translation_prompt = ChatPromptTemplate.from_template(translation_template)
+    # translation_template = """
+    # Translate {answer} to {language}
+    # """
 
-## information on the chain -> chain.input_schema.schema()
+    prompt = PromptTemplate.from_template(template)
+    ## Adding some extra spice - answering in your local language
+    # translation_prompt = ChatPromptTemplate.from_template(translation_template)
 
-# translation_chain = ({"answer": chain, "language": itemgetter("language")} | translation_prompt | model | parser)
+    ## information on the chain -> chain.input_schema.schema()
 
-## Initializing the vector store with a suitable embedding -> using a OllamaEmbeddings model for now
-# vectorStore = DocArrayInMemorySearch.from_documents(pdf_pages, embedding = OllamaEmbeddings(model="llama3"))
-# ret = vectorStore.as_retriever()
+    # translation_chain = ({"answer": chain, "language": itemgetter("language")} | translation_prompt | model | parser)
+
+    ## Initializing the vector store with a suitable embedding -> using a OllamaEmbeddings model for now
+    # vectorStore = DocArrayInMemorySearch.from_documents(pdf_pages, embedding = OllamaEmbeddings(model="llama3"))
+    # ret = vectorStore.as_retriever()
 
 
 
-model_name = "sentence-transformers/all-mpnet-base-v2"
-embeddings = HuggingFaceEmbeddings(model_name=model_name)
+    model_name = "sentence-transformers/all-mpnet-base-v2"
+    embeddings = HuggingFaceEmbeddings(model_name=model_name)
 
-vectorStore = Chroma.from_documents(documents=pdf_pages, embedding=embeddings, persist_directory="chroma_db")
+    vectorStore = Chroma.from_documents(documents=pdf_pages, embedding=embeddings, persist_directory="chroma_db")
 
-ret = vectorStore.as_retriever()
+    ret = vectorStore.as_retriever()
 
-chain = (
-    {"context": itemgetter("question") | ret, "question": itemgetter("question")}
-    | prompt
-    | model 
-    | parser
-)
+    chain = (
+        {"context": itemgetter("question") | ret, "question": itemgetter("question")}
+        | prompt
+        | model 
+        | parser
+    )
 
-chain.invoke("How does transformers work?")
+    return chain.invoke(question)

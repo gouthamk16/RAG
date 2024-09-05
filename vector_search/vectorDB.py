@@ -1,43 +1,37 @@
-## Creating a vector database given embeddings 
-from embedding import embed
-import torch
 import numpy as np
-from sklearn.metrics.pairwise import cosine_similarity
 
-class VectorDB:
-    def __init__(self, embedding_dim = 256):
-        self.embedding_dim = embedding_dim
-        self.vectors = {}
+class vectorStore:
+    def __init__(self):
+        self.vector = {} # Dictionary of vectors
         self.index = {}
     
-    def from_text(self, id, text):
-        embedding = embed(text, embedding_dim=self.embedding_dim)
-        self.vectors[id] = embedding
-        self.index[text] = id
+    def similarity(vector_a, vector_b, method="cosine"):
+        if method == "cosine":
+            return np.dot(vector_a, vector_b) / (np.linalg.norm(vector_a) * np.linalg.norm(vector_b))
+        else:
+            raise ValueError("Invalid similarity method")
+
+    def add_vectors(self, vector_id, vector):
+        self.vector[vector_id] = vector
+        self.update_index(vector_id, vector)
     
-    def retrieve(self, query, k=3):
-        embedded_query = embed(query, embedding_dim=self.embedding_dim)
-        list_of_embeddings = list(self.vectors.values())
-        list_of_ids = list(self.vectors.keys())
+    def get_vector(self, vector_id):
+        return self.vector.get(vector_id)
 
-        similarity = cosine_similarity([embedded_query], list_of_embeddings)[0]
+    def update_index(self, vector_id, vector):
+        for existing_id, exsiting_vector in self.vector.items():
+            # Calculating cosine similarity between the vectors to determine the new index
+            cosine_similarity = self.similarity(vector, exsiting_vector)
+            if existing_id not in self.index:
+                self.index[existing_id] = {}
+            self.index[existing_id][vector_id] = cosine_similarity
 
-        nearest = similarity.argsort()[::-1][:k]
-        nearest_neighbors = [(list_of_ids[i], similarity[i]) for i in nearest]
+    def get_similar(self, query, top_n=5):
+        results = []
+        for existing_id, existing_vector in self.vector.items():
+            cosine_similarity = self.similarity(query, existing_vector)
+            results.append((existing_id, cosine_similarity))
+        
+        results.sort(key=lambda x: x[1], reverse=True)
 
-        return nearest_neighbors
-
-
-
-# Create a vector database
-vector_db = VectorDB()
-vector_db.from_text(1, "Iam Goutham")
-vector_db.from_text(2, "Machine Learning is an AI")
-vector_db.from_text(3, "I drive a HONDA")
-
-query = "HONDA is a car"
-
-nearest_neighbors = vector_db.retrieve(query, k=3)
-print("Nearest neighbors to the query:")
-for neighbor in nearest_neighbors:
-    print(f"ID: {neighbor[0]}, Similarity: {neighbor[1]}")
+        return results[:top_n]
