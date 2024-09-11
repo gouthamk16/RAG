@@ -2,7 +2,9 @@
 import streamlit as st
 from rag_llm.youtube_rag import youtube_rag
 from rag_llm.pdf_rag import pdf_rag
-from rag_llm.web_rag import web_rag
+from langchain_community.document_loaders import PyPDFLoader 
+import tempfile
+
 
 st.title("Mutli RAG")
 

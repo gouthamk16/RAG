@@ -1,18 +1,23 @@
 from langchain_community.llms import Ollama 
 from langchain_core.output_parsers import StrOutputParser
-from langchain.prompts import ChatPromptTemplate, PromptTemplate
-from operator import itemgetter
+from langchain.prompts import PromptTemplate
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.document_loaders import PyPDFLoader 
 from langchain_community.vectorstores import Chroma
 from langchain.embeddings import HuggingFaceEmbeddings
 from langchain_core.runnables import RunnablePassthrough
+import tempfile
 
 
-def pdf_rag(question, pdf_path):
+def pdf_rag(question, pdf_file):
+
+    # Save the uploaded PDF to a temporary file
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as temp_pdf:
+        temp_pdf.write(pdf_file.read())
+        temp_pdf_path = temp_pdf.name
 
     ## Loading the input pdf:
-    pdf_loader = PyPDFLoader(pdf_path)
+    pdf_loader = PyPDFLoader(temp_pdf_path)
     pdf_pages = pdf_loader.load_and_split()
 
     # Create a chunk splitter with 1000 chars each and 200 chars to overlap
@@ -52,7 +57,7 @@ def pdf_rag(question, pdf_path):
     return chain.invoke(question)
 
 
-# Sample usage
-question = "Who is charles's father?"
-pdf_path = "../sample_data/pdf/leclerc_sample.pdf"
-print(pdf_rag(question, pdf_path))
+# # Sample usage
+# question = "Who is charles's father?"
+# pdf_path = "../sample_data/pdf/leclerc_sample.pdf"
+# print(pdf_rag(question, pdf_path))
