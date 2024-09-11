@@ -1,15 +1,15 @@
-## STREAMLIT APP WILL BE CREATED HERE !!
+## STREAMLIT APP -> (GUI for the functionality)
 import streamlit as st
 from rag_llm.youtube_rag import youtube_rag
 from rag_llm.pdf_rag import pdf_rag
 from rag_llm.web_rag import web_rag
 
-st.title("AI Model Summarizer")
+st.title("Mutli RAG")
 
 # User selects model
 option = st.selectbox(
     "Choose a model for summarization:",
-    ("YouTube Video Summarization", "PDF Summarization", "Website Summarization")
+    ("YouTube Video Summarization", "PDF Summarization")
 )
 
 # User inputs question
@@ -30,9 +30,3 @@ elif option == "PDF Summarization":
             response = pdf_rag(question, pdf_file)
             st.write(response)
 
-elif option == "Website Summarization":
-    url = st.text_input("Enter website URL:")
-    if st.button("Summarize Website"):
-        if url and question:
-            response = web_rag(question, url)
-            st.write(response)

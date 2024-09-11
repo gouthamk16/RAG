@@ -4,60 +4,55 @@ from langchain.prompts import ChatPromptTemplate, PromptTemplate
 from operator import itemgetter
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.document_loaders import PyPDFLoader 
-from langchain_community.vectorstores import DocArrayInMemorySearch, Chroma
-from langchain_community.embeddings import OllamaEmbeddings
+from langchain_community.vectorstores import Chroma
 from langchain.embeddings import HuggingFaceEmbeddings
+from langchain_core.runnables import RunnablePassthrough
+
 
 def pdf_rag(question, pdf_path):
 
     ## Loading the input pdf:
-    pdf_path = "../sample_data/pdf/sample.pdf"
     pdf_loader = PyPDFLoader(pdf_path)
     pdf_pages = pdf_loader.load_and_split()
 
+    # Create a chunk splitter with 1000 chars each and 200 chars to overlap
+    text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
+
+    # Split the pages into docs based on the splits
+    docs = text_splitter.split_documents(pdf_pages)
+
     model = Ollama(model="llama3")
 
-    parser = StrOutputParser()
+    model_name = "sentence-transformers/all-mpnet-base-v2"
+    embeddings = HuggingFaceEmbeddings(model_name=model_name)
+
+    vectorStore = Chroma.from_documents(documents=docs, embedding=embeddings, persist_directory="chroma_db")
+    retriever = vectorStore.as_retriever()
 
     template = """
-    You are an intelligent AI assistent curated to analyze and summarize PDF's. Answer the question based on the context provided below. If you can't 
-    answer the question from the given context, reply "I don't know".
+    You are an intelligent AI assistant who analyzes and answers question based on the given context. Answer the question based on the context provided. If you can't answer the question from the context, reply "I don't know".
 
     Context: {context}
 
     Question: {question}
     """
 
-    # translation_template = """
-    # Translate {answer} to {language}
-    # """
-
     prompt = PromptTemplate.from_template(template)
-    ## Adding some extra spice - answering in your local language
-    # translation_prompt = ChatPromptTemplate.from_template(translation_template)
+    parser = StrOutputParser()
 
-    ## information on the chain -> chain.input_schema.schema()
-
-    # translation_chain = ({"answer": chain, "language": itemgetter("language")} | translation_prompt | model | parser)
-
-    ## Initializing the vector store with a suitable embedding -> using a OllamaEmbeddings model for now
-    # vectorStore = DocArrayInMemorySearch.from_documents(pdf_pages, embedding = OllamaEmbeddings(model="llama3"))
-    # ret = vectorStore.as_retriever()
-
-
-
-    model_name = "sentence-transformers/all-mpnet-base-v2"
-    embeddings = HuggingFaceEmbeddings(model_name=model_name)
-
-    vectorStore = Chroma.from_documents(documents=pdf_pages, embedding=embeddings, persist_directory="chroma_db")
-
-    ret = vectorStore.as_retriever()
-
+    # Langchain
     chain = (
-        {"context": itemgetter("question") | ret, "question": itemgetter("question")}
+        {"context": retriever, "question": RunnablePassthrough()}
         | prompt
         | model 
         | parser
     )
 
+    # Get the response
     return chain.invoke(question)
+
+
+# Sample usage
+question = "Who is charles's father?"
+pdf_path = "../sample_data/pdf/leclerc_sample.pdf"
+print(pdf_rag(question, pdf_path))
